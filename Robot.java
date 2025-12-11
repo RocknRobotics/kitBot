@@ -4,7 +4,11 @@
 
 package frc.robot;
 
-import static edu.wpi.first.units.Units.Micro;
+import static edu.wpi.first.units.Units.Percent;
+
+import com.ctre.phoenix.motorcontrol.ControlMode;
+import com.ctre.phoenix.motorcontrol.TalonSRXControlMode;
+import com.ctre.phoenix.motorcontrol.can.TalonSRX;
 
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.TimedRobot;
@@ -24,14 +28,16 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
   //All Deffinitions
-  private Talon motorDriveLF = new Talon(1);
-  private Talon motorDriveLB = new Talon(11);
+  private TalonSRX motorDriveLF = new TalonSRX(1);
+  private TalonSRX motorDriveLB = new TalonSRX(11);
 
-  private Talon motorDriveRF = new Talon(2);
-  private Talon motorDriveRB = new Talon(12);
+  private TalonSRX motorDriveRF = new TalonSRX(2);
+  private TalonSRX motorDriveRB = new TalonSRX(12);
+  
 
   private PS4Controller controller = new PS4Controller(0);
 
+  private double factor = 1;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -86,7 +92,17 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when teleop is enabled. */
   @Override
-  public void teleopInit() {}
+  public void teleopInit() {
+    motorDriveLF.setInverted(true);
+    motorDriveLB.setInverted(true);
+    motorDriveRB.setInverted(true);
+
+    motorDriveLB.configMotionAcceleration(10000,10000);
+    motorDriveLF.configMotionAcceleration(10000,10000);
+    motorDriveRB.configMotionAcceleration(10000,10000);
+    motorDriveRF.configMotionAcceleration(10000,10000);
+
+  }
 
   /** This function is called periodically during operator control. */
   @Override
@@ -94,9 +110,18 @@ public class Robot extends TimedRobot {
     double translational = controller.getLeftY();
     double rotational = controller.getRightX();
 
-    double left = translational + rotational;
-    double right = translational - rotational;
+    double left = translational - rotational;
+    double right = translational + rotational;
+
+    left *= factor;
+    right *= factor;
     
+    if(controller.getR1ButtonPressed() && factor < 1){
+      factor += 0.25;
+    }
+    if(controller.getL1ButtonPressed() && factor > 0.25){
+      factor -= 0.25;
+    }
 
     if(left < -1){
       left = -1;
@@ -112,11 +137,14 @@ public class Robot extends TimedRobot {
       right = 1;
     }
 
-    motorDriveLF.set(left);
-    motorDriveLB.set(left);
+    motorDriveLF.set(ControlMode.PercentOutput, left);
+    motorDriveLB.set(ControlMode.PercentOutput, left);
 
-    motorDriveRF.set(right);
-    motorDriveRB.set(right);
+    motorDriveRF.set(ControlMode.PercentOutput, right);
+    motorDriveRB.set(ControlMode.PercentOutput, right);
+    System.out.println("Left: "+left);
+    System.out.println("Right: "+ right);
+    System.out.println("Factor: "+factor);
   }
 
   /** This function is called once when the robot is disabled. */
@@ -126,11 +154,11 @@ public class Robot extends TimedRobot {
   /** This function is called periodically when disabled. */
   @Override
   public void disabledPeriodic() {
-    motorDriveLF.set(0);
-    motorDriveLB.set(0);
+    motorDriveLF.set(ControlMode.PercentOutput,0);
+    motorDriveLB.set(ControlMode.PercentOutput,0);
 
-    motorDriveRF.set(0);
-    motorDriveRB.set(0);
+    motorDriveRF.set(ControlMode.PercentOutput,0);
+    motorDriveRB.set(ControlMode.PercentOutput,0);
   }
 
   /** This function is called once when test mode is enabled. */
