@@ -21,6 +21,9 @@ public class drive {
     public drive() {
     }
 
+    /*
+    Sets all motors to rotate in the same direction forward
+    */
     public void setUp() {
         motorDriveLF.setInverted(true);
         motorDriveLB.setInverted(true);
@@ -35,6 +38,9 @@ public class drive {
         motorDriveRB.set(ControlMode.PercentOutput, 0);
     }
 
+    /*
+    Handles basic drive functions
+    */
     public void drivePeriodic() {
         double translational = controller.getLeftY();
         double rotational = controller.getRightX();
@@ -42,13 +48,7 @@ public class drive {
         double left = translational - rotational;
         double right = translational + rotational;
 
-        gearShift();
-        
-        left *= factor;
-        right *= factor;
-
-        left = calculate(left);
-        right = calculate(right);
+        gearShift();  // Affects the max speed baed off current gear
 
         if (left < -1) {
             left = -1;
@@ -64,6 +64,18 @@ public class drive {
             right = 1;
         }
 
+        /*
+        limits speed by gear limit
+        */
+        left *= factor;
+        right *= factor;
+
+        /*
+        Calculates acceleration
+        */
+        left = calculate(left);
+        right = calculate(right);
+        
         motorDriveLF.set(ControlMode.PercentOutput, left);
         motorDriveLB.set(ControlMode.PercentOutput, left);
 
@@ -90,17 +102,16 @@ public class drive {
     private double maxAccel = 0.05;
 
     public double calculate(double desiredOutput){
-        double difference = desiredOutput - prev;
+        double velChange = desiredOutput - prev;  // Calculates the net change in velocity
 
-        if(Math.abs(difference) > maxAccel){
-            difference = Math.copySign(maxAccel, difference);
+        if(Math.abs(velChange) > maxAccel){
+            velChange = Math.copySign(maxAccel, velChange);  // Determines if you want to increse or decrease vlocity
         }
 
-        double newOutput = prev + difference;
+        double newOutput = prev + velChange;  // Changes velocity
 
         prev = newOutput;
 
         return newOutput;
     }
-
 }
